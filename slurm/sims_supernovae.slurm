@@ -13,6 +13,6 @@
 source /mnt/home/twagg/.bashrc
 conda activate cogsworth
 
-echo "higher ecsn kicks"
+echo "fiducial r 3pc"
 
-python /mnt/home/twagg/supernova-feedback/src/fire_runner.py -a 1.0 -c 1.0 -e -265 -p 128 -t 200
+python /mnt/home/twagg/supernova-feedback/src/fire_runner.py -a 1.0 -c 1.0 -p 128 -t 200
