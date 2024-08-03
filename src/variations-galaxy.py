@@ -1,6 +1,7 @@
 import argparse
 import astropy.units as u
 import cogsworth
+import pandas as pd
 
 
 def run_variation(file_name=None, alphavir=None, radius=None):
@@ -12,14 +13,21 @@ def run_variation(file_name=None, alphavir=None, radius=None):
     
     particle_ids = p.initC["particle_id"]
 
+    # excuse some minor hacking around the function nothing to see here
+    setattr(p, "sample_initial_galaxy", cogsworth.hydro.pop.HydroPopulation.sample_initial_galaxy)
+    p._initial_binaries = p.initC
+    p.star_particles = pd.read_hdf("/mnt/home/twagg/supernova-feedback/data/FIRE_star_particles.h5")
+    p._subset_inds = p.star_particles.index.values
+
     if alphavir is not None:
         p.virial_parameter = alphavir
 
     if radius is not None:
         p.cluster_radius = radius * u.pc
+    p.cluster_mass = 1e4 * u.Msun
 
     print("Resampling initial galaxy")
-    p.sample_initial_galaxy()
+    p.sample_initial_galaxy(p)
     
     print("Starting galactic evolution")
     
