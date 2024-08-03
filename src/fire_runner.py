@@ -5,7 +5,7 @@ import pandas as pd
 import cogsworth
 
 def run_sim(alpha_vir, alpha_ce, mt_eff=-1, ecsn_kick=-20, bhflag=1, subset=None, processes=32, extra_time=200 * u.Myr):
-    pot = gp.load("/mnt/home/twagg/supernova-feedback/data/m11h_potential.yml")
+    pot = gp.load("/mnt/home/twagg/supernova-feedback/data/m11h_new_potential.yml")
     star_particles = pd.read_hdf("/mnt/home/twagg/supernova-feedback/data/FIRE_star_particles.h5", key="df")
     p = cogsworth.hydro.pop.HydroPopulation(star_particles=star_particles,
                                             max_ev_time=13736.52127883025 * u.Myr + extra_time,
@@ -13,18 +13,21 @@ def run_sim(alpha_vir, alpha_ce, mt_eff=-1, ecsn_kick=-20, bhflag=1, subset=None
                                             m1_cutoff=4,
                                             virial_parameter=alpha_vir,
                                             subset=subset,
-                                            cluster_radius=1 * u.pc,
+                                            cluster_radius=3 * u.pc,
                                             cluster_mass=1e4 * u.Msun,
                                             processes=processes,
                                             BSE_settings={"alpha1": alpha_ce, "acc_lim": mt_eff,
                                                           'bhflag': bhflag, 'sigmadiv': ecsn_kick})
-    p.create_population()
+    p.sample_initial_binaries()
+    p.sample_initial_galaxy()
+    p.perform_stellar_evolution()
+    p._orbits = []
     
     if p._initC is not None and "particle_id" not in p._initC.columns:
         p._initC["particle_id"] = p._initial_binaries["particle_id"]
 
     # save the results
-    p.save(f"/mnt/home/twagg/ceph/pops/m11h-r-3", overwrite=True)
+    p.save(f"/mnt/home/twagg/ceph/pops/m11h-r-3-no-gal", overwrite=True)
 
 
 def main():
