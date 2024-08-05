@@ -281,6 +281,7 @@ def _lighten_colour(color, amount=0.5):
 def compare_variations(pops, pop_labels,
                        group_labels=["Fiducial", "Common-Envelope", "Mass Transfer", "Supernova kicks"],
                        group_start_inds=[1, 3, 6], annotate_loc=380, quantity="distance",
+                       fiducial_settings=None,
                        fig=None, ax=None, show=True):
 
     if fig is None or ax is None:
@@ -311,6 +312,12 @@ def compare_variations(pops, pop_labels,
     for g, l in zip(groups, group_labels):
         ax.annotate(l, xy=(np.mean(positions[g[0]:g[1]] + intraspacing), annotate_loc), fontsize=0.8*fs,
                     ha="center", bbox=dict(boxstyle="round", fc="white", ec='white'), va="top")
+    
+    if fiducial_settings is not None:
+        ax.annotate('\n'.join(fiducial_settings),
+                    xy=(np.mean(positions[groups[0][0]:groups[0][1]] + intraspacing), annotate_loc * 0.95),
+                    fontsize=0.7*fs, color="grey", ha="center",
+                    bbox=dict(boxstyle="round", fc="white", ec='white'), va="top")
     ax.set_ylim(top=annotate_loc * 1.025)
     
     for j, p in enumerate(pops):
