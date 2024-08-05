@@ -2,6 +2,7 @@ import astropy.units as u
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+import colorsys
 import pandas as pd
 import gala.dynamics as gd
 
@@ -101,9 +102,9 @@ def get_data_and_weights(p, var, widths=None):
     return data, weights
 
 
-def sandpile(p, bins=np.geomspace(2e0, 3e3, 400),
+def sandpile(p, bins=np.geomspace(2e0, 3e3, 75),
              var="distance", comparison_pop=None, top_ax_dict={},
-             inset_ax_dict={}, inset_n_bins=25,
+             inset_ax_dict={}, inset_n_bins=15,
              fig=None, axes=None, show=True):
     """Create a sandpile plot related to a population's supernovae"""
     if fig is None or axes is None:
@@ -262,6 +263,101 @@ def sandpile(p, bins=np.geomspace(2e0, 3e3, 400),
     if show:
         plt.show()
     return fig, axes
+
+
+def _lighten_colour(color, amount=0.5):
+    """
+    Lightens the given color by multiplying (1-luminosity) by the given amount.
+    Input can be matplotlib color string, hex string, or RGB tuple.
+    """
+    try:
+        c = mpl.colors.cnames[color]
+    except:
+        c = color
+    c = colorsys.rgb_to_hls(*mpl.colors.to_rgb(c))
+    return colorsys.hls_to_rgb(c[0], 1 - amount * (1 - c[1]), c[2])
+
+
+def compare_variations(pops, pop_labels,
+                       group_labels=["Fiducial", "Common-Envelope", "Mass Transfer", "Supernova kicks"],
+                       group_start_inds=[1, 3, 6], annotate_loc=380, quantity="distance",
+                       fig=None, ax=None, show=True):
+
+    if fig is None or ax is None:
+        fig, ax = plt.subplots(figsize=(18, 10))
+
+    intraspacing = 0.16
+    combo_col = "grey"
+    
+    # determine the positions based on gaps/groups
+    positions = np.arange(len(pops)).astype(float)
+    for g in group_start_inds:
+        positions[g:] += 0.5
+    
+    # add separator lines
+    for g in group_start_inds:
+        ax.axvline(np.mean(positions[g - 1:g + 1]) + 0.16, color="black", lw=0.5)
+        
+    # define the groups of positions to find the centres of each group
+    groups = []
+    for i in range(len(group_start_inds) - 1):
+        if i == 0:
+            groups.append((0, group_start_inds[i]))
+        groups.append((group_start_inds[i], group_start_inds[i + 1]))
+        if i == len(group_start_inds) - 2:
+            groups.append((group_start_inds[i + 1], None))
+            
+    # label the group at its centre
+    for g, l in zip(groups, group_labels):
+        ax.annotate(l, xy=(np.mean(positions[g[0]:g[1]] + intraspacing), annotate_loc), fontsize=0.8*fs,
+                    ha="center", bbox=dict(boxstyle="round", fc="white", ec='white'), va="top")
+    ax.set_ylim(top=annotate_loc * 1.025)
+    
+    for j, p in enumerate(pops):
+        data, _ = get_data_and_weights(pops[p], quantity, widths=[1])
+        data = data[:-1]
+        
+        combo_data = np.concatenate(data)
+    
+        for i in range(len(data)):
+            ax.boxplot(data[i],
+                        patch_artist=True,
+                        vert=True,
+                        showfliers=False,
+                        showcaps=False,
+                        boxprops=dict(facecolor=colours[i], edgecolor="none"),
+                        positions=[positions[j] + i * intraspacing],
+                        whis=0,
+                        medianprops=dict(color=_lighten_colour(colours[i], 1.15), lw=2, zorder=10, alpha=1))
+            
+            if p == 'fiducial':
+                ax.axhline(np.median(data[i]), color=_lighten_colour(colours[i], 1.15), zorder=-1, linestyle="--")
+        
+        comb_low, comb_med, comb_high = np.percentile(combo_data, [25, 50, 75])
+        ax.fill_between([positions[j] - 0.05, positions[j] + intraspacing * 2 + 0.05],
+                        [comb_low, comb_low], [comb_high, comb_high],
+                        color=combo_col, alpha=0.4, zorder=-1)
+        ax.plot([positions[j] - 0.05, positions[j] + intraspacing * 2 + 0.05], [comb_med, comb_med], lw=3, color=combo_col)
+        if p == "fiducial":
+            ax.axhline(comb_med, color=combo_col, zorder=-1, linestyle="--")
+            
+                
+    for l, c in zip(reversed(labels[:-1]), reversed(colours[:-1])):
+        ax.axvspan(np.nan, np.nan, color=c, label=l)
+    ax.axvspan(np.nan, np.nan, color=combo_col, label="Total population")
+    ax.legend(loc="upper center", ncol=4, bbox_to_anchor=(0.5, 1.08), fontsize=0.7*fs)
+                
+    ax.set(yscale="linear", ylabel=xlabel[quantity],
+           xticks=positions + intraspacing)
+    ax.set_xticklabels(pop_labels, rotation=45)
+    
+    top_ax = ax.twinx()
+    top_ax.set(ylim=ax.get_ylim(), yscale="linear")
+    
+    if show:
+        plt.show()
+
+    return fig, ax
 
 
 def find_duplicate_supernovae(p):
