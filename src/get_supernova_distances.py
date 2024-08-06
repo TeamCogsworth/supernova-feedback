@@ -33,7 +33,9 @@ particle_orbits = np.load("/mnt/home/twagg/supernova-feedback/data/particle_orbi
 folder = "feedback-variations"
 # file_names = ["beta-0.0", "beta-0.5", "beta-1.0", "ce-0.1",
               # "ce-10.0", "no-fallback"]
-file_names = ["fiducial", "ecsn-265", "no-fallback"]
+# file_names = ["fiducial", "ecsn-265", "no-fallback"]
+# file_names = ["r-1.0", "r-10.0", "r-100.0"]
+file_names = ["ce-0.1", "ce-10.0", "no-fallback"]
     
 for file_name in file_names:
     print(f"Doing distances for {file_name}")
