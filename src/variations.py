@@ -1,7 +1,4 @@
 import argparse
-import gala.potential as gp
-import astropy.units as u
-import pandas as pd
 import cogsworth
 
 def reset_sampled_kicks(p):
@@ -9,7 +6,7 @@ def reset_sampled_kicks(p):
     for col in cols:
         p._initC[col] = -100.0
 
-def run_variation(file_name=None, alpha_ce=None, mt_eff=None, ecsn_kick=None, bhflag=None):
+def run_variation(file_name=None, alpha_ce=None, mt_eff=None, ecsn_kick=None, bhflag=None, qcritB=None):
     print("Loading in the template")
     p = cogsworth.pop.load("/mnt/home/twagg/ceph/pops/feedback-variations/variation-template.h5",
                            parts=["initial_binaries", "initial_galaxy"])
@@ -35,6 +32,15 @@ def run_variation(file_name=None, alpha_ce=None, mt_eff=None, ecsn_kick=None, bh
         reset_sampled_kicks(p)
         p.BSE_settings["bhflag"] = bhflag
         p.initC["bhflag"] = bhflag
+
+    if qcritB is not None:
+        # set qcrit for kstar = 2,3,4
+        qcrit_array = [0.0, 0.0, qcritB, qcritB, qcritB,
+                       0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        p.BSE_settings["qcrit_array"] = qcrit_array
+        p.initC["qcrit_2"] = qcritB
+        p.initC["qcrit_3"] = qcritB
+        p.initC["qcrit_4"] = qcritB
 
     print("Starting stellar evolution")
         
@@ -64,10 +70,12 @@ def main():
                         help='BH kick flag')
     parser.add_argument('-e', '--ecsn-kick', default=-20, type=int,
                         help='ECSN kick strength')
+    parser.add_argument('-q', '--qcritB', default=None, type=float,
+                        help='Critical mass ratio for kstar = 2,3,4')
     args = parser.parse_args()
 
     run_variation(file_name=args.file, alpha_ce=args.alpha_ce, mt_eff=args.beta, bhflag=args.bhflag,
-                  ecsn_kick=args.ecsn_kick)
+                  ecsn_kick=args.ecsn_kick, qcritB=args.qcritB)
 
 if __name__ == "__main__":
     main()
