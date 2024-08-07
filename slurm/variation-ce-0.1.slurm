@@ -15,4 +15,4 @@ conda activate cogsworth
 
 echo "ce-0.1"
 
-python /mnt/home/twagg/supernova-feedback/src/variations.py -f "ce-0.1.h5" -c 1.0
+python /mnt/home/twagg/supernova-feedback/src/variations.py -f "ce-0.1.h5" -c 0.1
