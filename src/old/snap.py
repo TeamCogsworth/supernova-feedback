@@ -4,8 +4,8 @@ import astropy.units as u
 import numpy as np
 from collections import defaultdict
 
-from .centre import find_centre
-from .utils import quick_lookback_time, FIRE_ptypes
+from .old.centre import find_centre
+from ..utils import quick_lookback_time, FIRE_ptypes
 
 
 class FIRESnapshot():
