@@ -5,7 +5,7 @@ import numpy as np
 from collections import defaultdict
 
 from .old.centre import find_centre
-from ..utils import quick_lookback_time, FIRE_ptypes
+from .utils import quick_lookback_time, FIRE_ptypes
 
 
 class FIRESnapshot():
