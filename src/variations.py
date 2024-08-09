@@ -6,7 +6,8 @@ def reset_sampled_kicks(p):
     for col in cols:
         p._initC[col] = -100.0
 
-def run_variation(file_name=None, alpha_ce=None, mt_eff=None, ecsn_kick=None, bhflag=None, qcritB=None):
+def run_variation(file_name=None, alpha_ce=None, mt_eff=None, ecsn_kick=None, bhflag=None, qcritB=None,
+                  Z_factor=None):
     print("Loading in the template")
     p = cogsworth.pop.load("/mnt/home/twagg/ceph/pops/feedback-variations/variation-template.h5",
                            parts=["initial_binaries", "initial_galaxy"])
@@ -42,6 +43,10 @@ def run_variation(file_name=None, alpha_ce=None, mt_eff=None, ecsn_kick=None, bh
         p.initC["qcrit_3"] = qcritB
         p.initC["qcrit_4"] = qcritB
 
+    if Z_factor is not None:
+        p._initial_binaries["metallicity"] *= Z_factor
+        p._initial_galaxy._Z *= Z_factor
+
     print("Starting stellar evolution")
         
     p.perform_stellar_evolution()
@@ -72,10 +77,12 @@ def main():
                         help='ECSN kick strength')
     parser.add_argument('-q', '--qcritB', default=None, type=float,
                         help='Critical mass ratio for kstar = 2,3,4')
+    parser.add_argument('-Z', '--Z_factor', default=1, type=float,
+                        help='Metallicity factor')
     args = parser.parse_args()
 
     run_variation(file_name=args.file, alpha_ce=args.alpha_ce, mt_eff=args.beta, bhflag=args.bhflag,
-                  ecsn_kick=args.ecsn_kick, qcritB=args.qcritB)
+                  ecsn_kick=args.ecsn_kick, qcritB=args.qcritB, Z_factor=args.Z_factor)
 
 if __name__ == "__main__":
     main()

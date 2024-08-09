@@ -13,6 +13,6 @@
 source /mnt/home/twagg/.bashrc
 conda activate cogsworth
 
-echo "m11h"
+echo "base sim"
 
-python /mnt/home/twagg/supernova-feedback/src/fire_runner.py -a 1.0 -c 1.0 -p 128 -t 200
+python /mnt/home/twagg/supernova-feedback/src/feedback_simulation.py -p 128 -t 200 -f "variation-template"
