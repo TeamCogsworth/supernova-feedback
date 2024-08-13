@@ -49,7 +49,7 @@ def main():
                         help='Output file name')
     parser.add_argument('-P', '--porb_model', default="sana12", type=str,
                         help='Binary orbital period model')
-    parser.add_argument('-q', '--q_power_law', default=0, type=int,
+    parser.add_argument('-q', '--q_power_law', default=0, type=float,
                         help='Binary mass ratio power law')
     args = parser.parse_args()
 
