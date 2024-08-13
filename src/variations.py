@@ -44,7 +44,9 @@ def run_variation(file_name=None, alpha_ce=None, mt_eff=None, ecsn_kick=None, bh
         p.initC["qcrit_4"] = qcritB
 
     if Z_factor is not None:
-        p._initial_binaries["metallicity"] *= Z_factor
+        if p._initial_binaries is not None:
+            p._initial_binaries["metallicity"] *= Z_factor
+        p.initC["metallicity"] *= Z_factor
         p._initial_galaxy._Z *= Z_factor
 
     print("Starting stellar evolution")
