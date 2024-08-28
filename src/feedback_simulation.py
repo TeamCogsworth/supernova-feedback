@@ -2,17 +2,19 @@ import argparse
 import gala.potential as gp
 import astropy.units as u
 import pandas as pd
+import numpy as np
 import cogsworth
 
 def run_sim(porb_model="sana12", q_power_law=0, processes=128, extra_time=200 * u.Myr, file=None):
     pot = gp.load("/mnt/home/twagg/supernova-feedback/data/m11h_new_potential.yml")
     star_particles = pd.read_hdf("/mnt/home/twagg/supernova-feedback/data/FIRE_star_particles.h5", key="df")
+    subset = np.load("/mnt/home/twagg/supernova-feedback/data/subset.npy")
     p = cogsworth.hydro.pop.HydroPopulation(star_particles=star_particles,
                                             max_ev_time=13736.52127883025 * u.Myr + extra_time,
                                             galactic_potential=pot,
                                             m1_cutoff=4,
                                             virial_parameter=1.0,
-                                            subset=None,
+                                            subset=subset,
                                             cluster_radius=3 * u.pc,
                                             cluster_mass=1e4 * u.Msun,
                                             processes=processes,
