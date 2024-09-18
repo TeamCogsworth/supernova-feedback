@@ -5,10 +5,16 @@ import pandas as pd
 import numpy as np
 import cogsworth
 
-def run_sim(porb_model="sana12", q_power_law=0, processes=128, extra_time=200 * u.Myr, file=None):
+def run_sim(porb_model="sana12", q_power_law=0, binfrac=None, processes=128, extra_time=200 * u.Myr, file=None):
     pot = gp.load("/mnt/home/twagg/supernova-feedback/data/m11h_new_potential.yml")
     star_particles = pd.read_hdf("/mnt/home/twagg/supernova-feedback/data/FIRE_star_particles.h5", key="df")
     subset = np.load("/mnt/home/twagg/supernova-feedback/data/subset.npy")
+
+    sampling_params = {"porb_model": porb_model, "q_power_law": q_power_law}
+    if binfrac is not None:
+        sampling_params["binfrac"] = binfrac
+        sampling_params["keep_singles"] = binfrac == 0.0
+
     p = cogsworth.hydro.pop.HydroPopulation(star_particles=star_particles,
                                             max_ev_time=13736.52127883025 * u.Myr + extra_time,
                                             galactic_potential=pot,
@@ -18,8 +24,7 @@ def run_sim(porb_model="sana12", q_power_law=0, processes=128, extra_time=200 * 
                                             cluster_radius=3 * u.pc,
                                             cluster_mass=1e4 * u.Msun,
                                             processes=processes,
-                                            sampling_params={"porb_model": porb_model,
-                                                             "q_power_law": q_power_law})
+                                            sampling_params=sampling_params)
     p.sample_initial_binaries()
     p.sample_initial_galaxy()
 
@@ -38,7 +43,7 @@ def run_sim(porb_model="sana12", q_power_law=0, processes=128, extra_time=200 * 
     if file is None:
         file = f"feedback-sim-porb-{porb_model}-q-{q_power_law}"
 
-    p.save(f"/mnt/home/twagg/ceph/pops/feedback-variations/{file}.h5", overwrite=True)
+    p.save(f"/mnt/home/twagg/ceph/pops/feedback-variations/{file}", overwrite=True)
 
 
 def main():
@@ -53,6 +58,8 @@ def main():
                         help='Binary orbital period model')
     parser.add_argument('-q', '--q_power_law', default=0, type=float,
                         help='Binary mass ratio power law')
+    parser.add_argument('-b', '--binfrac', default=None, type=float,
+                        help='Binary fraction')
     args = parser.parse_args()
 
     # check if args.porb_model is a number and convert to dict if so
@@ -67,6 +74,7 @@ def main():
 
     run_sim(porb_model=args.porb_model,
             q_power_law=args.q_power_law,
+            binfrac=args.binfrac,
             file=args.file,
             processes=args.processes,
             extra_time=args.extra_time * u.Myr)
