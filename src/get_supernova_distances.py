@@ -35,7 +35,9 @@ folder = "feedback-variations"
               # "ce-10.0", "no-fallback"]
 # file_names = ["fiducial", "ecsn-265", "no-fallback"]
 # file_names = ["r-1.0", "r-10.0", "r-100.0"]
-file_names = ["ce-0.1", "ce-10.0", "no-fallback"]
+# file_names = ["qcritB-1000.0"]#, "ce-10.0", "no-fallback"]
+# file_names = ["porb-0", "porb-minus1", "q-plus1", "q-minus1"]
+file_names = ["gamma-disc"]
     
 for file_name in file_names:
     print(f"Doing distances for {file_name}")

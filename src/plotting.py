@@ -5,6 +5,7 @@ import matplotlib as mpl
 import colorsys
 import pandas as pd
 import gala.dynamics as gd
+from copy import copy
 
 plt.rc('font', family='serif')
 plt.rcParams['text.usetex'] = False
@@ -43,7 +44,11 @@ top_ylabel = {
 }
 
 labels = ["Effectively Single", "Primary", "Secondary", "Merger Product"]
-colours = ["skyblue", plt.cm.viridis(0.4), plt.cm.viridis(0.7), "gold"]
+# colours = ["skyblue", plt.cm.viridis(0.4), plt.cm.viridis(0.7), "#DDA3E0"]
+# colours = ["skyblue", plt.cm.viridis(0.4), "#67C1AA", "#EC8153"]
+# colours = ["skyblue","#67C1AA", plt.cm.viridis(0.4), "#EC8153"]
+colours = ["skyblue", plt.cm.viridis(0.4), "#4EB89D", "#B777D5"]
+
 
 labels = list(reversed(labels))
 colours = list(reversed(colours))
@@ -104,8 +109,8 @@ def get_data_and_weights(p, var, widths=None):
 
 def sandpile(p, bins=np.geomspace(2e0, 3e3, 75),
              var="distance", comparison_pop=None, top_ax_dict={},
-             inset_ax_dict={}, inset_n_bins=15,
-             fig=None, axes=None, show=True):
+             inset_ax_dict={}, inset_n_bins=15, FIRE_lines=[(37.53, "FIRE-2")],
+             fig=None, axes=None, show=True, save_path=None):
     """Create a sandpile plot related to a population's supernovae"""
     if fig is None or axes is None:
         fig, axes = plt.subplots(2, 1, figsize=(12, 14))
@@ -138,13 +143,14 @@ def sandpile(p, bins=np.geomspace(2e0, 3e3, 75),
     ax.set_ylim(top=ax.get_ylim()[-1] * 1.1)
     
     ax.set(**top_ax_dict)
+
+    # if comparing to another population then plot the entire thing on top    
+    if comparison_pop is not None:
+        comp_data, comp_weights = get_data_and_weights(comparison_pop, var, widths)
+        ax.hist(np.concatenate(comp_data), weights=np.concatenate(comp_weights),
+                bins=bins, histtype="step", color="black", lw=2)
     
     if var in ["distance", "ejecta_mass"]:
-        # if comparing to another population then plot the entire thing on top    
-        if comparison_pop is not None:
-            ax.hist(np.concatenate((comparison_pop.primary_sn_distances[~comparison_pop.sn_truly_single],
-                                    comparison_pop.secondary_sn_distances)).to(u.pc).value,
-                    bins=bins, histtype="step", color="black", lw=2)
         
         # add markers for the median and another axis on top for ease of reading
         for d, w, c in zip(data, weights, colours):
@@ -246,20 +252,29 @@ def sandpile(p, bins=np.geomspace(2e0, 3e3, 75),
 
     # add a vertical line for the FIRE-2 Type-II SN stopping point and shade an area for time
     if var == "time":
-        for ax in axes:
-            ax.axvline(37.53, linestyle="--", color="black", lw=1)
-            t = ax.transLimits.inverted()
-            ax.annotate("FIRE-2 Type-II stops here", xy=(37, t.transform((0.5, 0.95))[1]),
-                        rotation=90, color="black", va="top", ha="right", fontsize=0.65*fs)
-            
-            ax.annotate(f"~{bottom[bin_centres > 37.53][0] * 100:1.0f}% occur later",
-                        xy=(39, t.transform((0.5, 0.65))[1]),
-                        rotation=90, color="black", va="center", ha="left", fontsize=0.65*fs)
-            # ax.axvspan(37.53, bins[-1] * 1.2, color="lightgrey", zorder=-10, alpha=0.5)
-            h, l = ax.get_legend_handles_labels()
-            ax.legend(h[::-1], l[::-1], fontsize=0.8*fs)
-            ax.xaxis.set_minor_locator(mpl.ticker.MultipleLocator(10))
+        for line, line_label in FIRE_lines:
+            for ax in axes:
+                ax.axvline(line, linestyle="dotted", color="black", lw=1)
+                t = ax.transLimits.inverted()
 
+                if len(FIRE_lines) == 1:
+                    ax.annotate(f"{line_label} Type-II stops here", xy=(line - 0.5, t.transform((0.5, 0.95))[1]),
+                                rotation=90, color="black", va="top", ha="right", fontsize=0.65*fs)
+                    ax.annotate(f"~{bottom[bin_centres > line][0] * 100:1.0f}% occur later",
+                                xy=(line + 2, t.transform((0.5, 0.65))[1]),
+                                rotation=90, color="black", va="center", ha="left", fontsize=0.65*fs)
+                else:
+                    ax.annotate(f"{line_label}", xy=(line, t.transform((0.5, 0.979))[1]),
+                                rotation=90, color="black", va="top", ha="center", fontsize=0.65*fs,
+                                bbox=dict(boxstyle="round", ec="white", fc="white"))
+                # ax.axvspan(37.53, bins[-1] * 1.2, color="lightgrey", zorder=-10, alpha=0.5)
+                h, l = ax.get_legend_handles_labels()
+                ax.legend(h[::-1], l[::-1], fontsize=0.8*fs)
+                ax.xaxis.set_minor_locator(mpl.ticker.MultipleLocator(10))
+
+    if save_path is not None:
+        plt.savefig(save_path, format="pdf" if save_path.endswith("pdf") else "png", bbox_inches="tight")
+    
     if show:
         plt.show()
     return fig, axes
@@ -280,15 +295,20 @@ def _lighten_colour(color, amount=0.5):
 
 def compare_variations(pops, pop_labels,
                        group_labels=["Fiducial", "Common-Envelope", "Mass Transfer", "Supernova kicks"],
-                       group_start_inds=[1, 3, 6], annotate_loc=380, quantity="distance",
-                       fiducial_settings=None,
-                       fig=None, ax=None, show=True):
+                       group_start_inds=[1, 3, 6], annotate_loc=380, quantity="distance", combo_col="#c4c4c4",
+                       fiducial_settings=None, show_rel_bars=True, show_legend=True, show_labels=True, figwidth=19, figheight=10,
+                       fig=None, axes=None, show=True):
 
-    if fig is None or ax is None:
-        fig, ax = plt.subplots(figsize=(18, 10))
+    if fig is None or axes is None:
+        if show_rel_bars:
+            fig, axes = plt.subplots(2, 1, figsize=(figwidth, figheight * 1.2), gridspec_kw={"height_ratios": [2, 10]})
+            fig.subplots_adjust(hspace=0.0)
+            ax_top, ax = axes
+            ax_top.axis("off")
+        else:
+            fig, ax = plt.subplots(figsize=(figwidth, figheight))
 
     intraspacing = 0.16
-    combo_col = "grey"
     
     # determine the positions based on gaps/groups
     positions = np.arange(len(pops)).astype(float)
@@ -316,47 +336,72 @@ def compare_variations(pops, pop_labels,
     if fiducial_settings is not None:
         ax.annotate('\n'.join(fiducial_settings),
                     xy=(np.mean(positions[groups[0][0]:groups[0][1]] + intraspacing), annotate_loc * 0.95),
-                    fontsize=0.7*fs, color="grey", ha="center",
+                    fontsize=0.6*fs, color="grey", ha="center",
                     bbox=dict(boxstyle="round", fc="white", ec='white'), va="top")
     ax.set_ylim(top=annotate_loc * 1.025)
+
+    global colours, labels
+    colours = [colours[2], colours[1], colours[0]]
+    labels = [labels[2], labels[1], labels[0]]
+
+    fid_data = get_data_and_weights(pops["fiducial"], quantity, widths=[1])[1][:-1]
     
     for j, p in enumerate(pops):
         data, _ = get_data_and_weights(pops[p], quantity, widths=[1])
-        data = data[:-1]
+        data = list(reversed(data[:-1]))
         
         combo_data = np.concatenate(data)
+
+        lowest = np.inf
     
         for i in range(len(data)):
-            ax.boxplot(data[i],
-                        patch_artist=True,
-                        vert=True,
-                        showfliers=False,
-                        showcaps=False,
-                        boxprops=dict(facecolor=colours[i], edgecolor="none"),
-                        positions=[positions[j] + i * intraspacing],
-                        whis=0,
-                        medianprops=dict(color=_lighten_colour(colours[i], 1.15), lw=2, zorder=10, alpha=1))
+            low, med, high = np.percentile(data[i], [25, 50, 75])
+            ax.fill_between([positions[j] + i * intraspacing - intraspacing / 2, positions[j] + i * intraspacing + intraspacing / 2],
+                            [low, low], [high, high],
+                            color=colours[i])
+            ax.plot([positions[j] + i * intraspacing - intraspacing / 2, positions[j] + i * intraspacing + intraspacing / 2],
+                    [med, med], lw=2, color=_lighten_colour(colours[i], 1.15), zorder=10)
+
+            lowest = min(low, lowest)
+
+            # print(f"{len(data[i]) / len(combo_data):1.2f}")
             
             if p == 'fiducial':
-                ax.axhline(np.median(data[i]), color=_lighten_colour(colours[i], 1.15), zorder=-1, linestyle="--")
+                ax.axhline(np.median(data[i]), color=_lighten_colour(colours[i], 1.15),
+                           zorder=-1, linestyle="-", alpha=0.5)
+
+        if show_rel_bars:
+            for i in range(len(data)):
+                # ax.annotate(f"{len(data[i]) / len(combo_data):1.2f}", xy=(positions[j] + i * intraspacing, lowest),
+                #             ha="center", va="top", fontsize=0.6*fs, color=_lighten_colour(colours[i], 1.15), rotation=60)
+                ax_top.bar(x=positions[j] + i * intraspacing, height=len(data[i]),# / len(fid_data[i]),
+                           edgecolor=colours[i], facecolor=colours[i], alpha=0.5, width=intraspacing, lw=0)
+            # ax_top.bar(x=positions[j] + (i + 1) * intraspacing, height=len(combo_data) / len(np.concatenate(fid_data)), color="grey", width=intraspacing)
+            
         
         comb_low, comb_med, comb_high = np.percentile(combo_data, [25, 50, 75])
         ax.fill_between([positions[j] - 0.05, positions[j] + intraspacing * 2 + 0.05],
                         [comb_low, comb_low], [comb_high, comb_high],
-                        color=combo_col, alpha=0.4, zorder=-1)
-        ax.plot([positions[j] - 0.05, positions[j] + intraspacing * 2 + 0.05], [comb_med, comb_med], lw=3, color=combo_col)
+                        color=combo_col, zorder=-1)
+        ax.plot([positions[j] - 0.1, positions[j] + intraspacing * 2 + 0.1], [comb_med, comb_med], lw=3, color=_lighten_colour(combo_col, 1.15), zorder=0)
         if p == "fiducial":
-            ax.axhline(comb_med, color=combo_col, zorder=-1, linestyle="--")
+            ax.axhline(comb_med, color=combo_col, zorder=-1, linestyle="-", alpha=0.5)
             
                 
-    for l, c in zip(reversed(labels[:-1]), reversed(colours[:-1])):
+    for l, c in zip(labels, colours):
         ax.axvspan(np.nan, np.nan, color=c, label=l)
     ax.axvspan(np.nan, np.nan, color=combo_col, label="Total population")
-    ax.legend(loc="upper center", ncol=4, bbox_to_anchor=(0.5, 1.08), fontsize=0.7*fs)
+
+    if show_legend:
+        ax.legend(loc="upper center", ncol=4, bbox_to_anchor=(0.5, 1.28 if show_rel_bars else 1.08), fontsize=0.8*fs)
                 
     ax.set(yscale="linear", ylabel=xlabel[quantity],
            xticks=positions + intraspacing)
-    ax.set_xticklabels(pop_labels, rotation=45)
+    ax.set_xticklabels(pop_labels if show_labels else ["" for _ in positions], rotation=45)
+    ax.set_xlim(positions[0] - 0.5, positions[-1] + 0.5 + intraspacing * 2)
+
+    if show_rel_bars:
+        ax_top.set(xlim=ax.get_xlim())
     
     top_ax = ax.twinx()
     top_ax.set(ylim=ax.get_ylim(), yscale="linear")
@@ -392,6 +437,10 @@ def set_sn_subpop_masks(p):
     primary_sn_rows = sn_rows[sn_rows["evol_type"] == 15]
     secondary_sn_rows = sn_rows[sn_rows["evol_type"] == 16]
 
+    aic_nums = sn_rows[((sn_rows["kstar_1"] >= 10) & (sn_rows["kstar_1"] <= 12)) |
+                       ((sn_rows["kstar_2"] >= 10) & (sn_rows["kstar_2"] <= 12))]["bin_num"].unique()
+    p.aic = np.isin(sn_rows["bin_num"].unique(), aic_nums)
+
     sn_initC = p.initC.loc[sn_rows["bin_num"]]
     truly_single_bin_nums = sn_initC[sn_initC["kstar_2"] == 15].index.values
     
@@ -401,19 +450,22 @@ def set_sn_subpop_masks(p):
     interaction_nums = np.unique(np.concatenate((rlof_nums, rmg_1[rmg_1 > -0.05].index.values, rmg_2[rmg_2 > -0.05].index.values)))
     interaction_nums = np.concatenate((rlof_nums, p.bpp["bin_num"][(p.bpp.groupby("bin_num")["mass_1"].diff().fillna(0.0) > 0.0)
                                                   | (p.bpp.groupby("bin_num")["mass_2"].diff().fillna(0.0) > 0.0)].unique()))
+
+    kick_rows = p.kick_info.loc[secondary_sn_rows["bin_num"].unique()].drop_duplicates(subset="bin_num", keep="first")
+    nonzero_ejections = kick_rows["vsys_2_total"] > 5 * u.km / u.s
     
     sn_1_sep_zero = primary_sn_rows["bin_num"].isin(primary_sn_rows["bin_num"][primary_sn_rows["sep"] == 0.0])
     sn_2_sep_zero = secondary_sn_rows["bin_num"].isin(secondary_sn_rows["bin_num"][secondary_sn_rows["sep"] == 0.0])
     
     p.sn_truly_single = primary_sn_rows["bin_num"].isin(truly_single_bin_nums)
     p.sn_1_singles = ~primary_sn_rows["bin_num"].isin(interaction_nums) & ~p.sn_truly_single & ~sn_1_sep_zero
-    p.sn_2_singles = ~secondary_sn_rows["bin_num"].isin(interaction_nums) & ~sn_2_sep_zero
+    p.sn_2_singles = ~secondary_sn_rows["bin_num"].isin(interaction_nums) & ~sn_2_sep_zero & ~nonzero_ejections
 
     p.sn_1_merger = ~(p.sn_1_singles | p.sn_truly_single) & sn_1_sep_zero
-    p.sn_1 = ~(p.sn_1_singles | p.sn_truly_single) & ~sn_1_sep_zero
+    p.sn_1 = ~(p.sn_1_singles | p.sn_truly_single | primary_sn_rows["bin_num"].isin(aic_nums)) & ~sn_1_sep_zero
     
     p.sn_2_merger = ~p.sn_2_singles & sn_2_sep_zero
-    p.sn_2 = ~p.sn_2_singles & ~sn_2_sep_zero
+    p.sn_2 = ~(p.sn_2_singles | secondary_sn_rows["bin_num"].isin(aic_nums)) & ~sn_2_sep_zero
     
     print(p.sn_1_singles.sum() + p.sn_2_singles.sum(), p.sn_1.sum(), p.sn_2.sum(), p.sn_1_merger.sum() + p.sn_2_merger.sum())
     
