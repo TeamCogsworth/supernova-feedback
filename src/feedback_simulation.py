@@ -11,9 +11,11 @@ def run_sim(porb_model="sana12", q_power_law=0, binfrac=None, processes=128, ext
     subset = np.load("/mnt/home/twagg/supernova-feedback/data/subset.npy")
 
     sampling_params = {"porb_model": porb_model, "q_power_law": q_power_law}
+    BSE_settings = {}
     if binfrac is not None:
         sampling_params["binfrac"] = binfrac
         sampling_params["keep_singles"] = binfrac == 0.0
+        BSE_settings["binfrac"] = binfrac
 
     p = cogsworth.hydro.pop.HydroPopulation(star_particles=star_particles,
                                             max_ev_time=13736.52127883025 * u.Myr + extra_time,
@@ -24,7 +26,8 @@ def run_sim(porb_model="sana12", q_power_law=0, binfrac=None, processes=128, ext
                                             cluster_radius=3 * u.pc,
                                             cluster_mass=1e4 * u.Msun,
                                             processes=processes,
-                                            sampling_params=sampling_params)
+                                            sampling_params=sampling_params,
+                                            BSE_settings=BSE_settings)
     p.sample_initial_binaries()
     p.sample_initial_galaxy()
 
