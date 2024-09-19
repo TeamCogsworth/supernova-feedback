@@ -89,7 +89,10 @@ def main():
                         help='Angular momentum loss for mass transfer')
     args = parser.parse_args()
 
-    run_variation(file_name=args.ecsn_kick, qcritB=args.qcritB, Z_factor=args.Z_factor, gamma=args.gamma)
+    run_variation(file_name=args.file,
+                  alpha_ce=args.alpha_ce, mt_eff=args.beta, ecsn_kick=args.ecsn_kick,
+                  bhflag=args.bhflag, qcritB=args.qcritB,
+                  Z_factor=args.Z_factor, gamma=args.gamma)
 
 if __name__ == "__main__":
     main()
