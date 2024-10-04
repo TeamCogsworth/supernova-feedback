@@ -66,6 +66,8 @@ def run_variation(file_name=None, alpha_ce=None, mt_eff=None, ecsn_kick=None, bh
     if file_name is None or file_name == "":
         file_name = f"ce-{alpha_ce}-beta-{mt_eff}-ecsn-{ecsn_kick}-bhflag-{bhflag}.h5"
 
+    print("Saving file now")
+
     p.save(f"/mnt/home/twagg/ceph/pops/feedback-variations/{file_name}", overwrite=True)
 
 
