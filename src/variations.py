@@ -73,19 +73,19 @@ def main():
     parser = argparse.ArgumentParser(description='Feedback variation runner')
     parser.add_argument('-f', '--file', default="", type=str,
                         help='File name to use')
-    parser.add_argument('-c', '--alpha_ce', default=1.0, type=float,
+    parser.add_argument('-c', '--alpha_ce', default=None, type=float,
                         help='Common-envelope efficiency')
-    parser.add_argument('-b', '--beta', default=-1, type=float,
+    parser.add_argument('-b', '--beta', default=None, type=float,
                         help='Mass transfer efficiency')
-    parser.add_argument('-k', '--bhflag', default=1, type=int,
+    parser.add_argument('-k', '--bhflag', default=None, type=int,
                         help='BH kick flag')
-    parser.add_argument('-e', '--ecsn-kick', default=-20, type=int,
+    parser.add_argument('-e', '--ecsn-kick', default=None, type=int,
                         help='ECSN kick strength')
     parser.add_argument('-q', '--qcritB', default=None, type=float,
                         help='Critical mass ratio for kstar = 2,3,4')
-    parser.add_argument('-Z', '--Z_factor', default=1, type=float,
+    parser.add_argument('-Z', '--Z_factor', default=None, type=float,
                         help='Metallicity factor')
-    parser.add_argument('-g', '--gamma', default=-2, type=float,
+    parser.add_argument('-g', '--gamma', default=None, type=float,
                         help='Angular momentum loss for mass transfer')
     args = parser.parse_args()
 
